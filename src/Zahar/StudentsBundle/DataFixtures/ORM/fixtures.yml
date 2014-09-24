@@ -1,0 +1,5 @@
+Zahar\StudentsBundle\Entity\Students:
+    student{1..25000}:
+        name: <firstName()> <lastName()>
+        description: <text(500)>
+        path: ''

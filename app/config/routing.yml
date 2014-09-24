@@ -1,0 +1,4 @@
+students:
+    resource: "@StudentsBundle/Resources/config/routing.xml"
+    prefix:   /
+
