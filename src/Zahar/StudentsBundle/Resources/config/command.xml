@@ -1,0 +1,113 @@
+<?xml version="1.0" ?>
+
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
+
+    <parameters>
+        <parameter key="tmg.vakaturekrant.command.job_post.import.class">TMG\VacatureKrantBundle\Command\Job\Post\ImportCommand</parameter>
+        <parameter key="tmg.vakaturekrant.command.company.account.import.class">TMG\VacatureKrantBundle\Command\Company\Account\ImportCommand</parameter>
+        <parameter key="tmg.vakaturekrant.command.job_post.solr.class">TMG\VacatureKrantBundle\Command\Job\Post\SolrCommand</parameter>
+        <parameter key="tmg.vakaturekrant.job_post.import.logger.class">Symfony\Bridge\Monolog\Logger</parameter>
+        <parameter key="tmg.vakaturekrant.job_post.import.logger.handler.class">Monolog\Handler\StreamHandler</parameter>
+        <parameter key="tmg.vakaturekrant.job_post.solr.logger.class">Symfony\Bridge\Monolog\Logger</parameter>
+        <parameter key="tmg.vakaturekrant.job_post.solr.logger.handler.class">Monolog\Handler\StreamHandler</parameter>
+    </parameters>
+
+    <services>
+        <!-- Import job posts data from vacaturekrant -->
+        <service id="tmg.vakaturekrant.command.job_post.import" class="%tmg.vakaturekrant.command.job_post.import.class%">
+            <call method="setEntityManager">
+                <argument type="service" id="doctrine.orm.default_entity_manager" />
+            </call>
+            <call method="setLogger">
+                <argument type="service" id="tmg.vakaturekrant.job_post.import.logger" />
+            </call>
+            <call method="setBatchSize">
+                <argument>%vacaturekrant_import_batch_size%</argument>
+            </call>
+            <call method="setXmlPath">
+                <argument>%vacaturekrant_import_url%</argument>
+            </call>
+            <call method="setImporter">
+                <argument type="service" id="tmg.vakaturekrant.job.post.importer" />
+            </call>
+        </service>
+
+        <!-- Logger -->
+        <service id="tmg.vakaturekrant.job_post.import.logger" class="%tmg.vakaturekrant.job_post.import.logger.class%">
+            <argument>vacaturekrant</argument>
+            <call method="pushHandler">
+                <argument type="service">
+                    <service class="%tmg.vakaturekrant.job_post.import.logger.handler.class%">
+                        <argument>%kernel.logs_dir%/vakaturekrant_import.log</argument>
+                    </service>
+                </argument>
+            </call>
+            <tag name="monolog.logger" channel="vacaturekrant" />
+        </service>
+
+        <!-- Import data to solr -->
+        <service id="tmg.vakaturekrant.command.job_post.solr" class="%tmg.vakaturekrant.command.job_post.solr.class%">
+            <call method="setSolrClientAdapter">
+                <argument type="service" id="tmg.vakaturekrant.solr.client_adapter" />
+            </call>
+            <call method="setApplicationParams">
+                <argument type="service" id="tmg_core.application.params" />
+            </call>
+            <call method="setEntityManager">
+                <argument type="service" id="doctrine.orm.default_entity_manager" />
+            </call>
+            <call method="setLogger">
+                <argument type="service">
+                    <service class="%tmg.vakaturekrant.job_post.solr.logger.class%">
+                        <argument>vacaturekrant</argument>
+                        <call method="pushHandler">
+                            <argument type="service">
+                                <service class="%tmg.vakaturekrant.job_post.solr.logger.handler.class%">
+                                    <argument>%kernel.logs_dir%/vakaturekrant_solr.log</argument>
+                                </service>
+                            </argument>
+                        </call>
+                        <tag name="monolog.logger" channel="vacaturekrant" />
+                    </service>
+                </argument>
+            </call>
+            <call method="setRepository">
+                <argument type="service" id="tmg.vakaturekrant.job.post.entity.repository" />
+            </call>
+        </service>
+
+        <!-- Import company accounts data from vacaturekrant -->
+        <service id="tmg.vakaturekrant.command.company.account.import" class="%tmg.vakaturekrant.command.company.account.import.class%">
+            <call method="setEntityManager">
+                <argument type="service" id="doctrine.orm.default_entity_manager" />
+            </call>
+            <call method="setLogger">
+                <argument type="service">
+                    <service class="%tmg.vakaturekrant.job_post.solr.logger.class%">
+                        <argument>vacaturekrant</argument>
+                        <call method="pushHandler">
+                            <argument type="service">
+                                <service class="%tmg.vakaturekrant.job_post.solr.logger.handler.class%">
+                                    <argument>%kernel.logs_dir%/vakaturekrant_account_import.log</argument>
+                                </service>
+                            </argument>
+                        </call>
+                        <tag name="monolog.logger" channel="vacaturekrant" />
+                    </service>
+                </argument>
+            </call>
+            <call method="setBatchSize">
+                <argument>%vacaturekrant_account_import_batch_size%</argument>
+            </call>
+            <call method="setXmlPath">
+                <argument>%vacaturekrant_account_import_url%</argument>
+            </call>
+            <call method="setImporter">
+                <argument type="service" id="tmg.vakaturekrant.service.company.account.importer" />
+            </call>
+        </service>
+
+    </services>
+</container>
